@@ -24,4 +24,21 @@ Click on the link to the Rate My Professor link here:
 
 https://www.ratemyprofessors.com/
 
-Upon clicking the link, filter the university to the one of interest (Ohio State or University of North Carolina at Chapel Hill). 
+Upon clicking the link, filter the university to the one of interest (Ohio State or University of North Carolina at Chapel Hill).
+
+![Rate My Professor Head, with option to change/filter school](rmp_header.png)
+
+Follow up by typing/copying and pasting the name of the faculty member of interest to the Rate My Professor search engine. This should provide results of the name matches. Click on the matching result. 
+
+![Search Result from Rate My Professor](rmp_search_result.png)
+
+Upon clicking said page, the only item that you'll need to copy and paste of interest will be the link for the page. These shall be used to scrape all of the data in an automated manner so that you do not have to. Of esepcialy importance are the last digits following the forward slash. These uniquely identify a professor in such a way that knowing it alone will allow for the easy update and scraping for a given RMP page. 
+
+![Rate My Professor link to scrape](rmp_page_prof.png)
+
+Upon the collection of this information, you can proceed to the next professor. Once all of these professors are acquired, we can proceed with the text scraping, to be followed by the coding of their comments. 
+
+
+
+
+
