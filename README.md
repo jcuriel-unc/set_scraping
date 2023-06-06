@@ -7,4 +7,21 @@ The goal of this project is to scrape data/comments on professors with the likel
 
 ### Step 1: Log onto the program's website
 
-Employ a google search to find the program of interest. Should be done by typing in the name of the university, followed by the name of the program/major of interest. Follow this up by looking for the directory page. This can be found either by looking for the directory as typically found under the ``About" section for the major's website, the ``People" tab, etc. 
+Employ a google search to find the program of interest. Should be done by typing in the name of the university, followed by the name of the program/major of interest. Follow this up by looking for the directory page. This can be found either by looking for the directory as typically found under the "About" section for the major's website, the "People" tab, etc. 
+
+
+![Example of OSU public health page directory link](osu_public_health_dir.png)
+
+![Example of UNC Chapel Hill political science people link](unc_poli_sci_people.png)
+
+### Step 2: Record faculty characteristics from university page 
+
+Upon finding the way to the people/directory page, these faculty need to be recorded regarding their characteristics. Therefore, log into your ONU account and access the google sheet "faculty characteristics web scraping" page. For each professor that shows up, you'll want to record the information regarding: college, prof_firstname, prof_lastname, program, male, non_white, and link_rmp. The first sheet labeled "faculty" contains the data entry page, and the sheet "codebook" contains the values that the fields must take. For a given professor, simple observation and/or clicking their profile will contain the information of interest. 
+
+## Step 3: Find Rate My Professor Link 
+
+Click on the link to the Rate My Professor link here: 
+
+https://www.ratemyprofessors.com/
+
+Upon clicking the link, filter the university to the one of interest (Ohio State or University of North Carolina at Chapel Hill). 
