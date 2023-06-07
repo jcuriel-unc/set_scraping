@@ -106,7 +106,68 @@ Once you paste into your script, you'll need to clean some things up. What's of 
    
   Upon completion, you'll now have all of the comments within the object "prof_comments". Note that you'll do a similar effort for the other sections of interest, including difficulty and quality ratings, in addition to class name. 
    
-## Step 6 
+## Step 6: Extract quality, difficulty and class information
+   
+ Following the same logic/process within step 5, we proceed to find the patterns for the quality of the class, reported difficulty, and class name. These patterns are all found via the same inspection process. However, it is important to note a problem here. Unlike the comments, the patterns for the ratings and such vary in text patterns based upon the score. For example, the text pattern for the section of the page from a high quality rating is written as, 
+   
+<div class="CardNumRating__CardNumRatingNumber-sc-17t4b9u-2 gcFhmN">4.5</div>
+   
+ However, the text for a low quality rating is written as, 
+<div class="CardNumRating__CardNumRatingNumber-sc-17t4b9u-2 icXUyq">3.5</div>
+   
+ It appears that the last 6 characters differ, depending on rating. While everything else is the same, we see that difficulty follows a very similar pattern, 
+   
+ <div class="CardNumRating__CardNumRatingNumber-sc-17t4b9u-2 cDKJcc">
+   
+  Where everything is the same with a high quality rating besides the last 6 characters. Therefore, if we excise the last six characters, the new object created by the findall command would store the quality and difficulty ratings all in one object. If we print the list with the quality and difficulty ratings combined, we fortunatel find a pattern: the first digit is the quality rating, followed by the difficulty within the same box from the website, followed by another quality rating from the next box, then the difficulty rating, etc. Therefore, it looks like we can reasonably parse the data into their separate dimensions, which we will do in the next step. 
+   
+   
+ ![Extract meta info](fig6meta_all.png)
+   
+ ## Steps 7 and 8: parse the quality, difficulty and class data 
+   
+ Prior to parsing the data, we first check the lengths of these lists in order to ensure compatability. These should be exactly twice the length of the comment list. Printing these out reveals that they are. 
+   
+ ![Parse lists](fig7n8.png)
+   
+  Therefore, we parse according to the patterns found earlier. For the quality data, we subset via the command, 
+   
+  prof_qual = prof_score[0::2]
+   
+  Which says that we want to create a new object, prof_qual, from a subset of the prof_score object created in step 6. The brackets [] are used to grab a subset, with the 0 representing the first element of said list. The :: in the middle notes that we want to grab every element following some type of pattern, with the 2 at the end signifying that we want every other element. In effect, the command allows us to grab every other element starting with the first, thus grabbing all of the odd elements, which correspond to the quality data. The difficulty data in turn uses the same command, although this time starting with the second element, which in python is noted by a 1 instead of a 2. Finally, the class data ends up just having repeated elements, so we likewise just use the same command to grab every other element. Following this, we now have three lists of data all of the same length. 
+   
+## Step 9: Compile the data frame via a loop 
+   
+ In the penultimate step, we now take all of the data that we gathered and store into a common data frame via a loop. This is where the itertools, csv, and pandas libraries come into play. 
+ 
+  The section first creates an object to store information inside, d1. This is created via the empty brackets. The first line of the loop itself, 
+   
+   for i, element in enumerate(prof_qual):
+  
+   Says that we want to run the following processes for however long the object prof_qual is, which in this case is 16. The reason for the "for i" section of the loop is to allow us to grab the ith element from other objects besides prof_qual. If we were to go with the standard non-itertools version of element, we would grab instead the ith element within the prof_qual list alone. 
+   
+   The command within the loop "d1.append" says that we will add rows and columns to the as of now empty d1 object. 
+   
+   In turn, all of the words in quotations and followed by a colon is where a new column is created. The following object with an i in brackets notes that we are pulling the ith element from the lists/objects of interest. Note that most of these have the get_text() command, which simply cleans all of the text within the ith element. 
+   
+    ![Loop and append data](fig9loop.png)
+  
+   
+   When the loop ends, this is stored into the df object, as transformed by the pd.DataFrame command. This creates a clean data frame object that can be exported. 
+   
+## Step 10: Export the data 
+   
+The final step is to export the data as a csv (i.e. excel) file. In order to prevent the overlap of the data, the user inputted data on university and instructor name are combined into a string object "save_name." These will be stored in the "scraped_data" folder within github, which will prevent clutter. Finally, all of this is exported via the "df.to_csv" command, which exports the df object to the location and name as posited in the save_name object. From there, the data has been scraped!
+   
+
+    ![Export data](fig10export.png)
+   
+  
+ 
+   
+   
+   
+  
 
 
 
