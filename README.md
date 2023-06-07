@@ -142,7 +142,7 @@ Once you paste into your script, you'll need to clean some things up. What's of 
  
   The section first creates an object to store information inside, d1. This is created via the empty brackets. The first line of the loop itself, 
    
-   for i, element in enumerate(prof_qual):
+   "for i, element in enumerate(prof_qual):"
   
    Says that we want to run the following processes for however long the object prof_qual is, which in this case is 16. The reason for the "for i" section of the loop is to allow us to grab the ith element from other objects besides prof_qual. If we were to go with the standard non-itertools version of element, we would grab instead the ith element within the prof_qual list alone. 
    
@@ -150,7 +150,7 @@ Once you paste into your script, you'll need to clean some things up. What's of 
    
    In turn, all of the words in quotations and followed by a colon is where a new column is created. The following object with an i in brackets notes that we are pulling the ith element from the lists/objects of interest. Note that most of these have the get_text() command, which simply cleans all of the text within the ith element. 
    
-    ![Loop and append data](fig9loop.png)
+![Loop and append data](fig9loop.png)
   
    
    When the loop ends, this is stored into the df object, as transformed by the pd.DataFrame command. This creates a clean data frame object that can be exported. 
@@ -159,8 +159,7 @@ Once you paste into your script, you'll need to clean some things up. What's of 
    
 The final step is to export the data as a csv (i.e. excel) file. In order to prevent the overlap of the data, the user inputted data on university and instructor name are combined into a string object "save_name." These will be stored in the "scraped_data" folder within github, which will prevent clutter. Finally, all of this is exported via the "df.to_csv" command, which exports the df object to the location and name as posited in the save_name object. From there, the data has been scraped!
    
-
-    ![Export data](fig10export.png)
+![Export data](fig10export.png)
    
   
  
