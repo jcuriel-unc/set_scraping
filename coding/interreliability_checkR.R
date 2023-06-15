@@ -19,12 +19,12 @@ local_files <-list.files(full.names=T)
 local_files <- local_files[grepl(".csv",local_files)] ## subset to only include csv files 
 
 ## 
-gabe_coms <- read.csv(local_files[1])
-koen_coms <- read.csv(local_files[2]) 
+gabe_coms <- read.csv(local_files[2])
+koen_coms <- read.csv(local_files[4]) 
 
 ### now subset to include only first 15  
-gabe_coms <- gabe_coms[1:15,]
-koen_coms <- koen_coms[1:15,]
+gabe_coms <- gabe_coms[1:273,]
+koen_coms <- koen_coms[1:273,]
 
 dim(gabe_coms) ## 31 cols 
 
@@ -53,7 +53,7 @@ irr_df$item <- colnames(koen_coms[9:ncol(koen_coms)])
 
 for (i in 1:nrow(irr_df)) { ## starting off with first col of interest 
   temp_df <- cbind(gabe_coms[,i+8],koen_coms[,i+8])
-  irr_score <- kappa2(temp_df, weight = "equal")
+  irr_score <- kappa2(temp_df, weight = "equal") ## note: kappa 2 is for categorical or ordinal data 
   ## store in df 
   irr_df$kappa_score[i] <- irr_score$value
   irr_df$z_score[i] <- irr_score$statistic
@@ -67,3 +67,11 @@ View(irr_df) ### these will all be NA if everything is 0; need variance
 
 diff_mat <- koen_coms[,9:34] - gabe_coms[9:34]
 View(diff_mat)
+
+
+### Subset out the comments 
+diff_mat$row_number <- row_number(diff_mat)
+View(diff_mat)
+
+
+write.csv(diff_mat, "diff_mat06142023.csv", row.names = F)

@@ -1,6 +1,1 @@
-row,quality_of_class,difficulty_of_class,class_code,college,prof_firstname,prof_lastname,comment
-1,5.0,3.0, ECON5870,OHIO STATE UNIVERSITY,IAN,KRAJBICH,The most interesting class I've taken here at OSU. Dr. Krajbich consistently makes the content interesting and engaging. The course is stimulating and made me want to pursue this field in the future. Couldn't recommend this class more.
-2,5.0,2.0, ECON5870,OHIO STATE UNIVERSITY,IAN,KRAJBICH,Great professor. Class was straight forward and homework graded based on effort. Exam short answers are based on homework problems. 
-3,5.0,3.0, ECON5870,OHIO STATE UNIVERSITY,IAN,KRAJBICH,Great class. Great prof
-4,5.0,2.0, ECON5870,OHIO STATE UNIVERSITY,IAN,KRAJBICH,There is a midterm and final exam each worth about 30-35% of your grade and then there are optional pop quizzes that you can opt-out of at the beginning of the semester (about 5%). the last 30% is based on problem sets that are based solely on completion. All in all the content in this class is very straightforward and this is a pretty easy A.
-5,5.0,2.0, ECON5870,OHIO STATE UNIVERSITY,IAN,KRAJBICH,"Really interesting lectures, in a really interesting subject area. This class was mainly an overview of current research in the field. Dr. Krajbich does a great job of creating excitement for his subject within others, and he is sometimes pretty funny."
+college,prof_firstname,prof_lastname
