@@ -19,12 +19,12 @@ local_files <-list.files(full.names=T)
 local_files <- local_files[grepl(".csv",local_files)] ## subset to only include csv files 
 
 ## 
-gabe_coms <- read.csv(local_files[2])
-koen_coms <- read.csv(local_files[4]) 
+gabe_coms <- read.csv(local_files[3])
+koen_coms <- read.csv(local_files[6]) 
 
 ### now subset to include only first 15  
-gabe_coms <- gabe_coms[1:273,]
-koen_coms <- koen_coms[1:273,]
+gabe_coms <- gabe_coms[1:500,]
+koen_coms <- koen_coms[1:500,]
 
 dim(gabe_coms) ## 31 cols 
 
