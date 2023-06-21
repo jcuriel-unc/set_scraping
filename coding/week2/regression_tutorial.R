@@ -158,6 +158,7 @@ ggplot(test_data_frame2, aes(col_001,y_var)) + geom_point()
 # y axis. The geom_point is one of many extensions to tell the plot how to plot the data 
 
 ## what if we wanted to create a linear regression? The lm cmd!!! 
+test_model0 <- lm(y_var ~ col_003 + col_004, data = test_data_frame2)
 
 test_model <- lm(y_var ~., data = test_data_frame2)
 ## syntax note: first comes the dependent variable. the "~" tells to predict by the ensuing vars, with the "." noting 
@@ -198,15 +199,18 @@ stargazer(
 
 test_coef <- coef(test_model)
 class(test_coef) # vector, or one row matrix 
-
+test_coef
 ### the variance covariance matrix!!! 
 test_vcov <- vcov(test_model)
 class(test_vcov)
 dim(test_vcov) ## very important that it is a square 
+#'* some colorfull comment *`# 
 
+
+#### yethe 
 
 ### now, let's do some simulations!!!! 
-
+library(MASS)
 set.seed(77)
 random_beta_draws <- mvrnorm(10000, test_coef, test_vcov)
 ## arguments: 1) how many draws, 2) the coef matrix, 3) the variance-covariance matrix 
@@ -224,7 +228,7 @@ mean_vals
 #just tell it the df you want to apply to, 1= rows and 2 = columns, and then the fxn 
 
 ###let's make a sequence of column 8 vals 
-summary(test_data_frame$col_008) ## let's just do -3 to 3 
+summary(test_data_frame$col_019) ## let's just do -3 to 3 
 
 pred_seq <- seq(-3,3,by=0.1)
 length(pred_seq) ## 61 length...
@@ -236,7 +240,7 @@ pred_df <- as.data.frame(pred_df)
 View(pred_df) ## cool! 
 
 ## recall, col 8 only has its mean vals; let's replace with the sequence 
-pred_df$col_008 <- pred_seq ## must be same length 
+pred_df$col_019 <- pred_seq ## must be same length 
 
 ## note: we need an intercept 
 pred_df <- cbind(1,pred_df)
@@ -272,13 +276,13 @@ test_ggplot_reg <- ggplot(pred_prob_df, aes(x=pred_seq, y=median_est)) +
   geom_ribbon(aes(ymin=low_ci,ymax=upp_ci), alpha=0.4) + #### very important command; makes the CIs 
   theme_minimal() + ## cleans up the presentation of the plot 
   labs(title="An example of a regression plot", x="Number of hedgehogs owned", y="Interest in badgers", 
-       caption="This plot is brought to you by the Hedgehog Alliance of Ohio")
+       caption="This plot is brought to you by the Avengers")
 
 test_ggplot_reg
 
 ###note: do we have range of x vals? no. That's not good, since it belies realistic potential of data 
 test_ggplot_reg <- test_ggplot_reg +
-  geom_density(data=test_data_frame2,aes(x=col_008,y=after_stat(scaled)-1.5), col="blue",linewidth=1.2)
+  geom_density(data=test_data_frame2,aes(x=col_019,y=after_stat(scaled)-1), col="blue",linewidth=1.2)
 
 test_ggplot_reg
 
@@ -329,7 +333,7 @@ test_data_frame2$outlier_dummy[is.na(test_data_frame2$outliers)==F] <- 1
 
 
 ### 
-test_model_cd <- lm(y_var ~., data = subset(test_data_frame2, select=-c(row_num,row_num2,outliers)))
+test_model_cd <- lm(y_var ~., data = subset(test_data_frame2, select=-c(row_num,outliers)))
 summary(test_model_cd)
 
 ### woot! added in control; could also drop

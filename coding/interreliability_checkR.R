@@ -10,21 +10,24 @@ library(foreign) ## for reading in of csv files and such
 library(rstudioapi) ## for efficient grabbing of working directory info 
 library(ggplot2) ## for cool plots 
 library(irr)
+library(arm)
 ###setting directory 
 main_wd <- dirname(rstudioapi::getActiveDocumentContext()$path)
 setwd(main_wd)
+
+##1100 
 
 ### Read in the csv data 
 local_files <-list.files(full.names=T)
 local_files <- local_files[grepl(".csv",local_files)] ## subset to only include csv files 
 
 ## 
-gabe_coms <- read.csv(local_files[3])
-koen_coms <- read.csv(local_files[6]) 
+gabe_coms <- read.csv(local_files[5])
+koen_coms <- read.csv(local_files[9]) 
 
 ### now subset to include only first 15  
-gabe_coms <- gabe_coms[1:500,]
-koen_coms <- koen_coms[1:500,]
+gabe_coms <- gabe_coms[1:900,]
+koen_coms <- koen_coms[1:900,]
 
 dim(gabe_coms) ## 31 cols 
 
@@ -75,3 +78,16 @@ View(diff_mat)
 
 
 write.csv(diff_mat, "diff_mat06142023.csv", row.names = F)
+
+
+### lets do practice logit 
+
+log_seq <- seq(-100,100,by=1)
+
+output_logit <- invlogit(log_seq)
+
+
+## now plot 
+
+test_log_plot <- plot(log_seq,output_logit,xlim=c(-5,5), xlab="Logit coef.", ylab="Prob.",
+                      main="Example of logit corr and Prob")
