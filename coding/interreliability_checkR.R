@@ -22,12 +22,12 @@ local_files <-list.files(full.names=T)
 local_files <- local_files[grepl(".csv",local_files)] ## subset to only include csv files 
 
 ## 
-gabe_coms <- read.csv(local_files[5])
-koen_coms <- read.csv(local_files[9]) 
+gabe_coms <- read.csv(local_files[6])
+koen_coms <- read.csv(local_files[10]) 
 
-### now subset to include only first 15  
-gabe_coms <- gabe_coms[1:900,]
-koen_coms <- koen_coms[1:900,]
+### now subset to include only first 1100  
+gabe_coms <- gabe_coms[1:1100,]
+koen_coms <- koen_coms[1:1100,]
 
 dim(gabe_coms) ## 31 cols 
 
@@ -65,6 +65,30 @@ for (i in 1:nrow(irr_df)) { ## starting off with first col of interest
 
 ### good. Let's take a look at the df 
 View(irr_df) ### these will all be NA if everything is 0; need variance 
+
+### let's add these and then take the average 
+combined_matrix <- koen_coms[9:ncol(koen_coms)] + gabe_coms[9:ncol(gabe_coms)] ## adding together
+
+#combined_matrix <- combined_matrix/2 ## finding average score 
+class(combined_matrix) ## good, still data frame 
+
+### going with 0 as not present, 1 = somewhat, 2 = present 
+
+### find summary 
+summary(combined_matrix)
+
+### now let's rebind 
+
+final_df <- cbind(koen_coms[,1:8], combined_matrix)
+
+### now let's export as csv 
+write.csv(final_df, "text_cleaning_data/scored_rmp_data06212023.csv", row.names = F)
+
+
+
+#View(combined_matrix)
+
+
 
 ### Let's find these diffs 
 
