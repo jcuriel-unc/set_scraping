@@ -169,9 +169,14 @@ persp_rmp_output_nt$coded_toxic <- 0
 
 persp_all_output <- rbind(persp_rmp_output,persp_rmp_output_nt)
 
+
 ###save this data for now 
 saveRDS(persp_all_output, "peRspective_data_test_run06242023.rds")
+persp_all_output <- readRDS("peRspective_data_test_run06242023.rds")
 
+## subset again, just in case 
+persp_rmp_output_nt <- subset(persp_all_output,coded_toxic==0 )
+persp_rmp_output <- subset(persp_all_output,coded_toxic==1 )
 
 ### now let's merge the data 
 
@@ -183,7 +188,7 @@ View(rmp_df_persp_sub)
 ## write out csv 
 
 write.csv(rmp_df_persp_sub, "sample_peRspective_coded342obs.csv", row.names = F )
-
+rmp_df_persp_sub <- read.csv("sample_peRspective_coded342obs.csv")
 
 ### let's create a ggplot comparing these 
 
@@ -207,6 +212,45 @@ quantile(persp_rmp_output$aggregate_outrage, seq(0,1,by=0.05))
 ## given the first 1100 coded comments and those at least 1 on one of the dimensions, about half 
 # of the data is above 15. Additionally, approximately 35% of data are above 20. THerefore, seems like 
 #given this sample, we'd want to go with a cutoff between these two.
+
+## Let's check the toxic dim alone 
+quantile(persp_rmp_output$TOXICITY, seq(0,1,by=0.05))
+quantile(persp_rmp_output_nt$TOXICITY, seq(0,1,by=0.05)) ## looking at non toxic, there is a big jump at 
+# the 85th pct to 90th pct, and 90th to 95th. What's going on? Let's check 
+quantile(persp_rmp_output_nt$TOXICITY, seq(0.85,1,by=0.01))
+## looks like 92.5 and 94.5 are the big jumps. Let's check the comments of inteterest 
+
+persp_rmp_output_nt_false_pos <- subset(persp_rmp_output_nt, TOXICITY > 0.148)
+persp_rmp_output_nt_false_pos$text_id # length of 12 
+
+## what about above the 30% threshold? Top 95% of comments 
+persp_rmp_output_nt_false_pos2 <- subset(persp_rmp_output_nt, TOXICITY > 0.3)
+persp_rmp_output_nt_false_pos2$text_id # 9, with 1st 4 the same, then 6, 7, 9, 10, 11
+
+rmp_df_persp_sub$comment[rmp_df_persp_sub$text_id==persp_rmp_output_nt_false_pos$text_id[1]]
+rmp_df_persp_sub$comment[rmp_df_persp_sub$text_id==persp_rmp_output_nt_false_pos$text_id[2]]
+rmp_df_persp_sub$comment[rmp_df_persp_sub$text_id==persp_rmp_output_nt_false_pos$text_id[3]]
+## 3 is definitely neg and not constructive 
+rmp_df_persp_sub$comment[rmp_df_persp_sub$text_id==persp_rmp_output_nt_false_pos$text_id[4]] #this is odd 
+rmp_df_persp_sub$comment[rmp_df_persp_sub$text_id==persp_rmp_output_nt_false_pos$text_id[5]] # Hell is trigger
+rmp_df_persp_sub$comment[rmp_df_persp_sub$text_id==persp_rmp_output_nt_false_pos$text_id[6]] # pos, but 
+# critiquing those who cannot do well in the class 
+rmp_df_persp_sub$comment[rmp_df_persp_sub$text_id==persp_rmp_output_nt_false_pos$text_id[7]] # ibid
+rmp_df_persp_sub$comment[rmp_df_persp_sub$text_id==persp_rmp_output_nt_false_pos$text_id[8]] # defn critical,
+# and negative. Not constructive 
+rmp_df_persp_sub$comment[rmp_df_persp_sub$text_id==persp_rmp_output_nt_false_pos$text_id[9]] # very neg 
+rmp_df_persp_sub$comment[rmp_df_persp_sub$text_id==persp_rmp_output_nt_false_pos$text_id[10]] # mixed, not 
+# constructive 
+rmp_df_persp_sub$comment[rmp_df_persp_sub$text_id==persp_rmp_output_nt_false_pos$text_id[11]] # this should 
+# actually be an insult in my mind 
+rmp_df_persp_sub$comment[rmp_df_persp_sub$text_id==persp_rmp_output_nt_false_pos$text_id[12]] # neg on boring,
+# and not constructive 
+
+## the 30th pct gets rid of Hell one, the one about bored tone and take diff prof, and kind but boring one 
+# at end 
+### overall, these seem to suggest that the threshold of .15 is probably sufficient, especially since 
+# there are unlikely to be attacks on other students 
+
 
 ## save ggplot 
 ggsave("aggregate_perspective_plot_06242023.png" ,ggplot_persp, 
@@ -259,6 +303,15 @@ cor(rmp_df_persp_sub$manual_agg,rmp_df_persp_sub$aggregate_outrage) # 0.5197896
 test_lm <- lm(aggregate_outrage ~ manual_agg, data=rmp_df_persp_sub)
 summary(test_lm) # explains 26.8 percent of the variance; not bad 
 
+
+### check the nature of the toxicity 
+
+## 0.05 would be the 85th pct for non toxic. It would be the 20th pct for toxic. If we assume a 15% prev 
+# for toxicity, and 85 for non toxic, this means 
+850*.15 #  127.5 are coded as FP 
+150*.8 # 120 for toxic are TP 
+## still a high rate; we'd need to discount some of the outliers 
+
 ### now lets create a folder for plots then save a loop to there 
 
 
@@ -299,3 +352,38 @@ for (i in 1:length(models2run)) {
   ggsave(sv_name ,ggplot_persp_temp, 
          scale=1,width=9,height=6,units = c("in"), dpi=400,bg="white")
 }
+
+
+### check insult as well 
+quantile(persp_rmp_output_nt$INSULT,seq(0,1,by=0.05)) # so, big jumps at 90th to 95th, and 
+# 95th to 100 
+quantile(persp_rmp_output$INSULT,seq(0,1,by=0.05)) # If we go with a threshold of 0.1, we exclude 95% of the 
+# non toxic, and 50% of toxic. let's check what these are, though 
+
+test_sub <- subset(rmp_df_persp_sub,INSULT < 0.1 & coded_toxic==1 )
+test_sub2 <- subset(rmp_df_persp_sub,INSULT > 0.1 & coded_toxic==1 )
+
+rmp_df$comment[rmp_df$row_id== test_sub$text_id[1]]
+
+summary(test_sub$manual_agg) # so a median of 2, and 75th of 2  
+quantile(test_sub$manual_agg, seq(0,1,by=0.05)) # 8-th pct are 3+ 
+quantile(test_sub2$manual_agg, seq(0,1,by=0.05)) # 50th of 3; 
+
+### let's try finding out those obs either or on these dimensions 
+
+length(which(persp_rmp_output$INSULT>0.1 | persp_rmp_output$TOXICITY > 0.05 ))/nrow(persp_rmp_output)
+### we'd get 78%
+
+### what about the non toxic? 
+length(which(persp_rmp_output_nt$INSULT>0.1 | persp_rmp_output_nt$TOXICITY > 0.05 ))/nrow(persp_rmp_output_nt)
+# we'd be getting 16% 
+
+
+quantile(persp_rmp_output_nt$SEVERE_TOXICITY,seq(0,1,by=0.05))# max of 0.02. not much 
+
+### what about the toxic data? 
+quantile(persp_rmp_output$SEVERE_TOXICITY,seq(0,1,by=0.05))# max of 0.02. not much 
+### might be able to use this as a way to bolster the scores? 
+
+
+ 
