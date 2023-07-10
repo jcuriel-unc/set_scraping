@@ -21,16 +21,21 @@ setwd(main_wd)
 local_files <-list.files(full.names=T)
 local_files <- local_files[grepl(".csv",local_files)] ## subset to only include csv files 
 
-## 
-gabe_coms <- read.csv(local_files[6])
-koen_coms <- read.csv(local_files[11]) 
+## read in the final data 
+gabe_coms <- read.csv(local_files[grepl("gabe", local_files) & grepl("final", local_files)])
+koen_coms <- read.csv(local_files[grepl("koen", local_files) & grepl("final", local_files)]) 
+
+### since dealing with the final data, should be good to go. 
 
 ### now subset to include only first 1100  
-gabe_coms <- gabe_coms[1:1100,]
-koen_coms <- koen_coms[1:1100,]
+#gabe_coms <- gabe_coms[1:1100,]
+#koen_coms <- koen_coms[1:1100,]
 
-dim(gabe_coms) ## 31 cols 
-gabe_coms$out_emo_lang[is.na(gabe_coms$out_emo_lang)==T] <- 0
+dim(gabe_coms) ## 33 cols, 2800 rows  
+sum(is.na(gabe_coms$out_emo_lang)==T) # no missing 
+sum(is.na(koen_coms$out_emo_lang)==T) # no missing 
+
+# gabe_coms$out_emo_lang[is.na(gabe_coms$out_emo_lang)==T] <- 0
 
 ### lets create an aggregate index of the dims of interest 
 koen_coms$outrage_agg <- rowSums(koen_coms[,grepl("out_", colnames(koen_coms))])
@@ -41,6 +46,10 @@ gabe_coms$outrage_agg <- rowSums(gabe_coms[,grepl("out_", colnames(gabe_coms))])
 gabe_coms$personal_attack_agg <- rowSums(gabe_coms[,grepl("pa_", colnames(gabe_coms))])
 gabe_coms$prejudice_agg <- rowSums(gabe_coms[,grepl("pb_", colnames(gabe_coms))])
 
+
+## get rid of thumbs data 
+gabe_coms <- subset(gabe_coms, select=-c(thumbs_up,thumbs_down))
+koen_coms <- subset(koen_coms, select=-c(thumbs_up,thumbs_down))
 
 ### good; note that the rows of coding comments starts at 9 
 ### We should be able to loop through all of these 
@@ -76,7 +85,7 @@ colSums(koen_coms[,9:31])
 View(irr_df) ### these will all be NA if everything is 0; need variance 
 
 #### save the irr file 
-write.csv(irr_df, "interrel_first1100.csv", row.names=F)
+write.csv(irr_df, "interrel_final.csv", row.names=F)
 
 
 ### let's add these and then take the average 
@@ -105,9 +114,11 @@ final_df$comment <- str_replace_all(final_df$comment,str_to_title(final_df$prof_
 final_df$comment <- str_replace_all(final_df$comment,str_to_lower(final_df$prof_lastname),"")
 final_df$comment <- str_replace_all(final_df$comment,str_to_lower(final_df$prof_firstname),"")
 ### now let's export as csv 
-write.csv(final_df, "text_cleaning_data/scored_rmp_data06212023.csv", row.names = F)
+write.csv(final_df, "text_cleaning_data/scored_rmp_data_osu_final.csv", row.names = F)
 
+### find the corr of the constructive v not 
 
+cor(final_df$constructive, (final_df$outrage_agg+final_df$prejudice_agg+final_df$personal_attack_agg))
 
 #View(combined_matrix)
 

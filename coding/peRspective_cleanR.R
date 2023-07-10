@@ -66,13 +66,21 @@ write.csv(unc_df2, "unc_comment_data_with_persp.csv", row.names = F)
 unc_df2 <- read.csv("unc_comment_data_with_persp.csv")
 
 ### re read in the data from Gabe and update 
-rmp_ratings <- read.csv("thumbs_master_unc_data_comments.csv")
+rmp_ratings <- read.csv("final_thumbs_master_unc_data_comments.csv")
 
 ### looks like the data is missing the ID fields. We will see what we can do with the comment data. 
 nrow(unc_df2) 
 nrow(rmp_ratings)
+rmp_ratings <- subset(rmp_ratings, select=-c(comment,difficulty_of_class,quality_of_class))
+
 ### they are different lengths. Will need to see whats going on 
-unc_df3 <- merge(unc_df2, rmp_ratings , by="comment")
+unc_df3 <- merge(unc_df2, rmp_ratings , by = c("college","prof_firstname","prof_lastname","row"))
+### got 1360; not everything made it; why? 
+unc_miss <- merge(unc_df2, rmp_ratings , by = c("college","prof_firstname","prof_lastname","row"), all.x=T)
+unc_miss <- subset(unc_miss, is.na(thumbs_down)==T)
+#View(unc_miss) # just the Bowen observations excluded. Let's write out 
+
+write.csv(unc_df3,"final_thumbs_master_unc_data_comments_merged.csv",row.names = F)
 ### the above did not work. We will need to try again 
 
 
