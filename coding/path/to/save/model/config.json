@@ -2,23 +2,13 @@
   "_name_or_path": "gpt2",
   "activation_function": "gelu_new",
   "architectures": [
-    "GPT2Model"
+    "GPT2LMHeadModel"
   ],
   "attn_pdrop": 0.1,
   "bos_token_id": 50256,
   "embd_pdrop": 0.1,
   "eos_token_id": 50256,
-  "id2label": {
-    "0": "LABEL_0",
-    "1": "LABEL_1",
-    "2": "LABEL_2"
-  },
   "initializer_range": 0.02,
-  "label2id": {
-    "LABEL_0": 0,
-    "LABEL_1": 1,
-    "LABEL_2": 2
-  },
   "layer_norm_epsilon": 1e-05,
   "model_type": "gpt2",
   "n_ctx": 1024,
@@ -43,7 +33,7 @@
     }
   },
   "torch_dtype": "float32",
-  "transformers_version": "4.29.2",
+  "transformers_version": "4.30.2",
   "use_cache": true,
   "vocab_size": 50257
 }
