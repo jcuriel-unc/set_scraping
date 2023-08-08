@@ -51,6 +51,23 @@ gabe_coms$prejudice_agg <- rowSums(gabe_coms[,grepl("pb_", colnames(gabe_coms))]
 gabe_coms <- subset(gabe_coms, select=-c(thumbs_up,thumbs_down))
 koen_coms <- subset(koen_coms, select=-c(thumbs_up,thumbs_down))
 
+## let's get total toxicity 
+gabe_coms$total_toxic <- gabe_coms$outrage_agg + gabe_coms$personal_attack_agg + gabe_coms$prejudice_agg
+koen_coms$total_toxic <- koen_coms$outrage_agg + koen_coms$personal_attack_agg + koen_coms$prejudice_agg
+
+### now let's get the score 
+## bind into matrix 
+test_mat_osu <- matrix(cbind(koen_coms$total_toxic,gabe_coms$total_toxic),ncol=2)
+
+
+## ICC here 
+toxic_icc_osu <- icc(test_mat_osu, "oneway", "agreement")
+
+
+
+
+
+
 ### good; note that the rows of coding comments starts at 9 
 ### We should be able to loop through all of these 
 
