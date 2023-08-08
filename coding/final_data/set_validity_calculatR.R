@@ -12,6 +12,8 @@ library(arm)
 library(peRspective)
 library(grid)
 library(stargazer)
+library(ROCR)
+
 ###setting directory 
 main_wd <- dirname(rstudioapi::getActiveDocumentContext()$path)
 setwd(main_wd)
@@ -66,4 +68,246 @@ ggsave("plots/complete_openai_corr_plot.png" ,ggplot_openai_corr_all,
        scale=1,width=9,height=6,units = c("in"), dpi=400,bg="white")
 
 ### good. Now can find reliability (f1) scores and such 
+
+# Function: evaluation metrics
+## True positives (TP) - Correctly idd as success
+## True negatives (TN) - Correctly idd as failure
+## False positives (FP) - success incorrectly idd as failure
+## False negatives (FN) - failure incorrectly idd as success
+## Precision - P = TP/(TP+FP) how many idd actually success/failure
+## Recall - R = TP/(TP+FN) how many of the successes correctly idd
+## F-score - F = (2 * P * R)/(P + R) harm mean of precision and recall
+prf <- function(predAct){
+  ## predAct is two col dataframe of pred,act
+  preds = predAct[,1]
+  trues = predAct[,2]
+  xTab <- table(preds, trues)
+  clss <- as.character(sort(unique(preds)))
+  r <- matrix(NA, ncol = 7, nrow = 1, 
+              dimnames = list(c(),c('Acc',
+                                    paste("P",clss[1],sep='_'), 
+                                    paste("R",clss[1],sep='_'), 
+                                    paste("F",clss[1],sep='_'), 
+                                    paste("P",clss[2],sep='_'), 
+                                    paste("R",clss[2],sep='_'), 
+                                    paste("F",clss[2],sep='_'))))
+  r[1,1] <- sum(xTab[1,1],xTab[2,2])/sum(xTab) # Accuracy
+  r[1,2] <- xTab[1,1]/sum(xTab[,1]) # Miss Precision
+  r[1,3] <- xTab[1,1]/sum(xTab[1,]) # Miss Recall
+  r[1,4] <- (2*r[1,2]*r[1,3])/sum(r[1,2],r[1,3]) # Miss F
+  r[1,5] <- xTab[2,2]/sum(xTab[,2]) # Hit Precision
+  r[1,6] <- xTab[2,2]/sum(xTab[2,]) # Hit Recall
+  r[1,7] <- (2*r[1,5]*r[1,6])/sum(r[1,5],r[1,6]) # Hit F
+  r}
+
+### I should be able to go with this 
+
+perf_scores_df <- as.data.frame(matrix(data=NA, nrow = 5,ncol=4))
+colnames(perf_scores_df) <- c("peRspective Low", "peRspective High", "openAI Low", "openAI High" )
+
+# precision is positive predictive val: TP/(TP+FP); 
+# recall is the division of TP against the actual positives. This would be the sum of TP and FN 
+# TP/(TP+FN)
+pred_persp <- with(ml_models_set_df, prediction(TOXICITY2, coded_toxic))
+## can check whats in an object with slotnames 
+slotNames(pred_persp)
+pred_persp@cutoffs # returns the cutoffs; we would presumably want to find the one that is 
+# associated with the max val
+
+### could we find the greatest jump in TPR? 
+tpr_persp <- pred_persp@tp
+
+### get the basic TPR plot 
+perf_persp_test = performance(pred_persp, measure = "tpr", x.measure = "cutoff")
+perf_persp_fpr = performance(pred_persp, measure = "fpr", x.measure = "cutoff")
+perf_persp_roc = performance(pred_persp, measure = "auc", x.measure = "cutoff")
+perf_persp_f = performance(pred_persp, measure = "f", x.measure = "cutoff")
+
+slotNames(perf_persp_test)
+### code to get optimal cutpoint 
+opt.cut = function(perf, pred){
+  cut.ind = mapply(FUN=function(x, y, p){
+    d = (x - 0)^2 + (y-1)^2
+    ind = which(d == min(d))
+    c(sensitivity = y[[ind]], specificity = 1-x[[ind]], 
+      cutoff = p[[ind]])
+  }, perf@x.values, perf@y.values, pred@cutoffs)
+}
+## get roc curve 
+roc_perf_persp = performance(pred_persp, measure = "tpr", x.measure = "fpr")
+print(opt.cut(roc_perf_persp, pred_persp))
+
+# sensitivity 0.82593857
+# specificity 0.77005560
+# cutoff      0.03580465
+
+### go with baked in method 
+cost.perf = performance(pred_persp, "cost")
+ideal_cutpoint_persp<-pred_persp@cutoffs[[1]][which.min(cost.perf@y.values[[1]])] #450th ? 
+### returns a val at 0.1531607. This means I should be able to find the associated val at that for 
+# the tpr and fpr , correct? 450th; therefore, I can use that to find the associated recall and precision
+pred_persp@tp[[1]][which(pred_persp@cutoffs[[1]]==ideal_cutpoint_persp)] # gets us the num I believe? 
+
+### get associated vals of interest ; store 
+perf_scores_df$`peRspective Low`[1] <- ideal_cutpoint_persp
+perf_scores_df$`peRspective Low`[2] <- 
+  perf_persp_test@y.values[[1]][which(pred_persp@cutoffs[[1]]==ideal_cutpoint_persp)] # TPR
+perf_scores_df$`peRspective Low`[3] <- 
+  perf_persp_fpr@y.values[[1]][which(pred_persp@cutoffs[[1]]==ideal_cutpoint_persp)] # FPR
+perf_scores_df$`peRspective Low`[4]<- perf_persp_roc@y.values[[1]] # AUC val 
+perf_scores_df$`peRspective Low`[5] <- 
+  perf_persp_f@y.values[[1]][which(pred_persp@cutoffs[[1]]==ideal_cutpoint_persp)] # F1 score 
+
+### now, repeat, but this time with a cutoff of 2 
+
+
+# TP/(TP+FN)
+pred_persp2 <- with(ml_models_set_df, prediction(TOXICITY2, coded_toxic2))
+## can check whats in an object with slotnames 
+
+### get the basic TPR plot 
+perf_persp_test2 = performance(pred_persp2, measure = "tpr", x.measure = "cutoff")
+perf_persp_fpr2 = performance(pred_persp2, measure = "fpr", x.measure = "cutoff")
+perf_persp_roc2 = performance(pred_persp2, measure = "auc", x.measure = "cutoff")
+perf_persp_f2 = performance(pred_persp2, measure = "f", x.measure = "cutoff")
+
+
+### go with baked in method 
+cost.perf2 = performance(pred_persp2, "cost")
+ideal_cutpoint_persp2<-pred_persp2@cutoffs[[1]][which.min(cost.perf2@y.values[[1]])] #450th ? 
+### returns a val at 0.1531607. This means I should be able to find the associated val at that for 
+# the tpr and fpr , correct? 450th; therefore, I can use that to find the associated recall and precision
+
+### get associated vals of interest
+perf_scores_df$`peRspective High`[1] <- ideal_cutpoint_persp2
+perf_scores_df$`peRspective High`[2] <- 
+  perf_persp_test2@y.values[[1]][which(pred_persp2@cutoffs[[1]]==ideal_cutpoint_persp2)] # TPR
+perf_scores_df$`peRspective High`[3] <- 
+  perf_persp_fpr2@y.values[[1]][which(pred_persp2@cutoffs[[1]]==ideal_cutpoint_persp2)] # FPR
+perf_scores_df$`peRspective High`[4]<- perf_persp_roc2@y.values[[1]] # AUC val 
+perf_scores_df$`peRspective High`[5] <- 
+  perf_persp_f2@y.values[[1]][which(pred_persp2@cutoffs[[1]]==ideal_cutpoint_persp2)]
+# F1 score 
+
+### Let's now go with the openAI model 
+pred_openai <- with(ml_models_set_df, prediction(openai_is_toxic, coded_toxic))
+## can check whats in an object with slotnames 
+
+### get the basic TPR plot 
+perf_openai_test = performance(pred_openai, measure = "tpr", x.measure = "cutoff")
+perf_openai_fpr = performance(pred_openai, measure = "fpr", x.measure = "cutoff")
+perf_openai_roc = performance(pred_openai, measure = "auc", x.measure = "cutoff")
+perf_openai_f = performance(pred_openai, measure = "f", x.measure = "cutoff")
+
+### go with baked in method 
+cost.perf_openai = performance(pred_openai, "cost")
+ideal_cutpoint_openai<-pred_openai@cutoffs[[1]][which.min(cost.perf_openai@y.values[[1]])] #450th ? 
+### returns a val at 0.1531607. This means I should be able to find the associated val at that for 
+# the tpr and fpr , correct? 450th; therefore, I can use that to find the associated recall and precision
+pred_openai@tp[[1]][which(pred_openai@cutoffs[[1]]==ideal_cutpoint_openai)] # gets us the num I believe? 
+
+## store 
+perf_scores_df$`openAI Low`[1] <- ideal_cutpoint_openai
+perf_scores_df$`openAI Low`[2] <- 
+  perf_openai_test@y.values[[1]][which(pred_openai@cutoffs[[1]]==ideal_cutpoint_openai)] # TPR
+perf_scores_df$`openAI Low`[3] <- 
+  perf_openai_fpr@y.values[[1]][which(pred_openai@cutoffs[[1]]==ideal_cutpoint_openai)] # FPR
+perf_scores_df$`openAI Low`[4]<- perf_openai_roc@y.values[[1]] # AUC val 
+perf_scores_df$`openAI Low`[5] <- 
+  perf_openai_f@y.values[[1]][which(pred_openai@cutoffs[[1]]==ideal_cutpoint_openai)]
+# F1 score 
+
+### now lets repeat, high threshold for open ai 
+
+pred_openai2 <- with(ml_models_set_df, prediction(openai_is_toxic, coded_toxic2))
+## can check whats in an object with slotnames 
+
+### get the basic TPR plot 
+perf_openai2_test = performance(pred_openai2, measure = "tpr", x.measure = "cutoff")
+perf_openai2_fpr = performance(pred_openai2, measure = "fpr", x.measure = "cutoff")
+perf_openai2_roc = performance(pred_openai2, measure = "auc", x.measure = "cutoff")
+perf_openai2_f = performance(pred_openai2, measure = "f", x.measure = "cutoff")
+
+### go with baked in method 
+cost.perf_openai2 = performance(pred_openai2, "cost")
+ideal_cutpoint_openai2<-pred_openai2@cutoffs[[1]][which.min(cost.perf_openai2@y.values[[1]])] #450th ? 
+### returns a val at 0.1531607. This means I should be able to find the associated val at that for 
+# the tpr and fpr , correct? 450th; therefore, I can use that to find the associated recall and precision
+pred_openai2@tp[[1]][which(pred_openai2@cutoffs[[1]]==ideal_cutpoint_openai2)] # gets us the num I believe? 
+
+## store 
+perf_scores_df$`openAI High`[1] <- ideal_cutpoint_openai2
+perf_scores_df$`openAI High`[2] <- 
+  perf_openai2_test@y.values[[1]][which(pred_openai2@cutoffs[[1]]==ideal_cutpoint_openai2)] # TPR
+perf_scores_df$`openAI High`[3] <- 
+  perf_openai2_fpr@y.values[[1]][which(pred_openai2@cutoffs[[1]]==ideal_cutpoint_openai2)] # FPR
+perf_scores_df$`openAI High`[4]<- perf_openai2_roc@y.values[[1]] # AUC val 
+perf_scores_df$`openAI High`[5] <- 
+  perf_openai2_f@y.values[[1]][which(pred_openai2@cutoffs[[1]]==ideal_cutpoint_openai2)]
+# F1 score 
+
+#### look at table ### 
+perf_scores_df
+## save 
+saveRDS(perf_scores_df, "performance_scores_models.rds")
+
+xtable::xtable(perf_scores_df)
+#### now, we will want to use said thresholds and figure out the comments excluded, given overall score 
+ml_models_set_df$persp_label1 <- 0
+ml_models_set_df$persp_label1[ml_models_set_df$TOXICITY2>=perf_scores_df$`peRspective Low`[1]] <- 1
+
+## high threshold 
+ml_models_set_df$persp_label2 <- 0
+ml_models_set_df$persp_label2[ml_models_set_df$TOXICITY2>=perf_scores_df$`peRspective High`[1]] <- 1
+
+### openai low 
+ml_models_set_df$openai_label1 <- 0
+ml_models_set_df$openai_label1[ml_models_set_df$openai_is_toxic>=perf_scores_df$`openAI Low`[1]] <- 1
+
+##openai high
+ml_models_set_df$openai_label2 <- 0
+ml_models_set_df$openai_label2[ml_models_set_df$openai_is_toxic>=perf_scores_df$`openAI High`[1]] <- 1
+
+### now, do a table of the data by labels 
+## create simplified total toxicity 
+ml_models_set_df$total_toxicity_simp <- 0
+ml_models_set_df$total_toxicity_simp[ml_models_set_df$total_toxicity>0 & ml_models_set_df$total_toxicity<1]<- 1
+ml_models_set_df$total_toxicity_simp[ml_models_set_df$total_toxicity>=1 & ml_models_set_df$total_toxicity<2]<- 2
+ml_models_set_df$total_toxicity_simp[ml_models_set_df$total_toxicity>=2 & ml_models_set_df$total_toxicity<3]<- 3
+ml_models_set_df$total_toxicity_simp[ml_models_set_df$total_toxicity>=3 & ml_models_set_df$total_toxicity<4]<- 4
+ml_models_set_df$total_toxicity_simp[ml_models_set_df$total_toxicity>=4 & ml_models_set_df$total_toxicity<5]<- 5
+ml_models_set_df$total_toxicity_simp[ml_models_set_df$total_toxicity>=5]<- 6
+## now make into a factor 
+ml_models_set_df$total_toxicity_simp <- factor(ml_models_set_df$total_toxicity_simp,
+                                               labels = c("No toxicity", "0.1 -< 1", "1 -< 2", "2 -< 3", 
+                                                          "3 -< 4", "4 -< 5", "5+"))
+## good, now identify 
+table(ml_models_set_df$total_toxicity_simp,ml_models_set_df$persp_label1)[,1]
+table(ml_models_set_df$total_toxicity_simp,ml_models_set_df$persp_label2)
+table(ml_models_set_df$total_toxicity_simp,ml_models_set_df$openai_label1)
+table(ml_models_set_df$total_toxicity_simp,ml_models_set_df$openai_label2)
+
+### we should be able to store as data frame 
+persp1vec <- (table(ml_models_set_df$total_toxicity_simp,ml_models_set_df$persp_label1)[,2]/
+  (table(ml_models_set_df$total_toxicity_simp,ml_models_set_df$persp_label1)[,1]+
+     table(ml_models_set_df$total_toxicity_simp,ml_models_set_df$persp_label1)[,2]))*100
+persp2vec <- (table(ml_models_set_df$total_toxicity_simp,ml_models_set_df$persp_label2)[,2]/
+                (table(ml_models_set_df$total_toxicity_simp,ml_models_set_df$persp_label2)[,1]+
+                   table(ml_models_set_df$total_toxicity_simp,ml_models_set_df$persp_label2)[,2]))*100
+openai1vec <- (table(ml_models_set_df$total_toxicity_simp,ml_models_set_df$openai_label1)[,2]/
+                 (table(ml_models_set_df$total_toxicity_simp,ml_models_set_df$openai_label1)[,1]+
+                    table(ml_models_set_df$total_toxicity_simp,ml_models_set_df$openai_label1)[,2]))*100
+openai2vec <- (table(ml_models_set_df$total_toxicity_simp,ml_models_set_df$openai_label2)[,2]/
+                 (table(ml_models_set_df$total_toxicity_simp,ml_models_set_df$openai_label2)[,1]+
+                    table(ml_models_set_df$total_toxicity_simp,ml_models_set_df$openai_label2)[,2]))*100
+## store in df 
+comparison_table<- data.frame(cbind("peRspective Low" = persp1vec, 
+                                    "peRspective High" = persp2vec,
+                                    "openAI Low" = openai1vec,
+                                    "openAI High" = openai2vec))
+comparison_table <- round(comparison_table, 2)
+## save 
+saveRDS(comparison_table, "comparison_table.rds")
+### let's xtable this 
+xtable::xtable(comparison_table)
 
