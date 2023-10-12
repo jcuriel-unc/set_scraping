@@ -104,7 +104,7 @@ persp_rmp_output_osu <- rmp_df_osu %>%
               score_model = models2run)
 ### save the data 
 saveRDS(persp_rmp_output_osu, "persp_rmp_output_osu.rds")
-
+persp_rmp_output_osu <- readRDS("persp_rmp_output_osu.rds")
 ### now merge with the data 
 rmp_df_osu2 <- merge(rmp_df_osu,persp_rmp_output_osu,by.x="row_id",by.y="text_id" )
 
@@ -430,6 +430,10 @@ length(which(unc_results_merge$total_toxicity>0))
 
 ## get quantile range 
 quantile(unc_results_merge$total_toxicity,seq(0,1,by=0.05))
+
+###export to final data 
+saveRDS(unc_results_merge, "final_data/labeled_unc_data.rds")
+# write.csv(test_set_unc_rmp, "final_data/labeled_unc_data.csv",row.names = F )
 
 ### let's split the data and measure range of the toxicity scores 
 unc_results_merge_toxic <- subset(unc_results_merge, total_toxicity >0 )

@@ -19,7 +19,18 @@ main_wd <- dirname(rstudioapi::getActiveDocumentContext()$path)
 setwd(main_wd)
 
 ### read in the open ai data and such 
-ml_models_set_df <- read.csv("openai_predictions.csv")
+ml_models_set_df <- read.csv("openai_predictions2.csv")
+
+#to balance the data, quickly get a subset of the OSU data 
+#osu_df <- subset(ml_models_set_df, college=="OHIO STATE UNIVERSITY" )
+#osu_dfnontox <- subset(osu_df, coded_toxic==0)
+#osu_df <-subset(osu_df, coded_toxic==1)
+#set.seed(1337)
+#osu_dfnontox_sub <- sample_n(osu_dfnontox, nrow(osu_df))
+## now rebind 
+#ml_models_set_df <- subset(ml_models_set_df,college!="OHIO STATE UNIVERSITY" )
+## here
+#ml_models_set_df <- rbind(ml_models_set_df, osu_df,osu_dfnontox_sub) ## now have 1172 obs 
 
 ### let's find some corrs 
 complete_lm <- lm((TOXICITY2)*100 ~ total_toxicity, data=ml_models_set_df)
@@ -38,7 +49,7 @@ ggplot_persp_corr_all <- ggplot(ml_models_set_df, aes(x=total_toxicity,y=(TOXICI
   labs(title="Comparison of correlation of manual coding \n on peRspective scores",
        x="Aggregated manual coding of comments", y="peRspective Toxicity score", 
        caption=paste0("X-axis reflects the average of the two coders. /n 
-                      R-squared = 0.3133, coef = 10.66, p<0.01"))+
+                      R-squared = 0.3049, coef = 11.04, p<0.01, N=5,167"))+
   scale_color_discrete(name = "Manual coding", labels = c("Not toxic", "Toxic")) + ylim(0,100)+
   stat_smooth(method = "lm",
               formula = y ~ x,
@@ -54,7 +65,7 @@ ggplot_openai_corr_all <- ggplot(ml_models_set_df, aes(x=total_toxicity,y=(opena
   labs(title="Comparison of correlation of manual coding \n on open AI scores",
        x="Aggregated manual coding of comments", y="open AI Toxicity score", 
        caption=paste0("X-axis reflects the average of the two coders. /n 
-                      R-squared = 0.1626, coef = 8.3480, p<0.01"))+
+                      R-squared = 0.1274, coef = 6.56, p<0.01, N=5,167"))+
   scale_color_discrete(name = "Manual coding", labels = c("Not toxic", "Toxic")) + ylim(0,100)+
   stat_smooth(method = "lm",
               formula = y ~ x,
@@ -311,3 +322,63 @@ saveRDS(comparison_table, "comparison_table.rds")
 ### let's xtable this 
 xtable::xtable(comparison_table)
 
+
+### get xtable of the pcts 
+persp1vec_col <- (table(ml_models_set_df$total_toxicity_simp,ml_models_set_df$persp_label1)[,2]/
+                (sum(table(ml_models_set_df$total_toxicity_simp,ml_models_set_df$persp_label1)[,2])))*100
+persp2vec_col <- (table(ml_models_set_df$total_toxicity_simp,ml_models_set_df$persp_label2)[,2]/
+                sum(table(ml_models_set_df$total_toxicity_simp,ml_models_set_df$persp_label2)[,2]))*100
+openai1vec_col <- (table(ml_models_set_df$total_toxicity_simp,ml_models_set_df$openai_label1)[,2]/
+                 sum(table(ml_models_set_df$total_toxicity_simp,ml_models_set_df$openai_label1)[,2]))*100
+openai2vec_col <- (table(ml_models_set_df$total_toxicity_simp,ml_models_set_df$openai_label2)[,2]/
+                 sum(table(ml_models_set_df$total_toxicity_simp,ml_models_set_df$openai_label2)[,2]))*100
+### now let's export as xtable 
+comparison_table_colsum<- data.frame(cbind("peRspective Low" = persp1vec_col, 
+                                    "peRspective High" = persp2vec_col,
+                                    "openAI Low" = openai1vec_col,
+                                    "openAI High" = openai2vec_col))
+saveRDS(comparison_table_colsum, "comparison_table_colsum.rds")
+# export 
+xtable::xtable(comparison_table_colsum)
+
+
+########################################################################################
+############### ATTEMPT TO IMPLEMENT A HYBRID MODEL ##################################
+
+## first, grab only data coded as maybe toxic according to persp 
+ml_models_set_df_subset_persp <- subset(ml_models_set_df, persp_label1 == 1)
+nrow(ml_models_set_df_subset_persp) ## 331 observations
+
+### Let's now go with the openAI model 
+pred_openai_hyb <- with(ml_models_set_df_subset_persp, prediction(openai_is_toxic, coded_toxic))
+## can check whats in an object with slotnames 
+
+### get the basic TPR plot 
+perf_openai_test_h = performance(pred_openai_hyb, measure = "tpr", x.measure = "cutoff")
+perf_openai_fpr_h = performance(pred_openai_hyb, measure = "fpr", x.measure = "cutoff")
+perf_openai_roc_h = performance(pred_openai_hyb, measure = "auc", x.measure = "cutoff")
+perf_openai_f_h = performance(pred_openai_hyb, measure = "f", x.measure = "cutoff")
+
+### go with baked in method 
+cost.perf_openai_hyb = performance(pred_openai_hyb, "cost")
+ideal_cutpoint_openai_hyb<-pred_openai_hyb@cutoffs[[1]][which.min(cost.perf_openai_hyb@y.values[[1]])] #450th ? 
+### returns a val at 0.1531607. This means I should be able to find the associated val at that for 
+# the tpr and fpr , correct? 450th; therefore, I can use that to find the associated recall and precision
+pred_openai_hyb@tp[[1]][which(pred_openai_hyb@cutoffs[[1]]==ideal_cutpoint_openai_hyb)] # gets us the num I believe? 
+
+### create new col 
+perf_scores_df$Hybrid <- NA
+
+## store 
+perf_scores_df$Hybrid[1] <- ideal_cutpoint_openai_hyb
+perf_scores_df$Hybrid[2] <- 
+  perf_openai_test@y.values[[1]][which(pred_openai_hyb@cutoffs[[1]]==ideal_cutpoint_openai_hyb)] # TPR
+perf_scores_df$Hybrid[3] <- 
+  perf_openai_fpr@y.values[[1]][which(pred_openai_hyb@cutoffs[[1]]==ideal_cutpoint_openai_hyb)] # FPR
+perf_scores_df$Hybrid[4]<- perf_openai_roc@y.values[[1]] # AUC val 
+perf_scores_df$Hybrid[5] <- 
+  perf_openai_f@y.values[[1]][which(pred_openai_hyb@cutoffs[[1]]==ideal_cutpoint_openai_hyb)]
+# F1 score
+
+perf_scores_df ## looking at these scores, it seems like the rate is lower, but its also a subset of the data.
+## this is saying that 11 percent of time, get true positives, 5 percent neg. That's too severe 

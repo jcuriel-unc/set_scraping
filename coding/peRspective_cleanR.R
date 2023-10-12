@@ -39,6 +39,17 @@ unc_df_persp <- unc_df %>%
   prsp_stream(text = comment,
               text_id = row_id,
               score_model = models2run)
+### also try on plain text 
+test_vec <- "I think hedges are cool"
+df_false <- as.data.frame(cbind(comment=test_vec,text_id=seq.int(1,length(test_vec))))
+df_new <- df_false %>%
+  prsp_stream(comment, 
+              text_id = text_id,
+              score_model = models2run)
+## create new score 
+df_new$TOXICITY2 <- df_new$TOXICITY+df_new$SEVERE_TOXICITY
+
+
 saveRDS(unc_df_persp, "perspective_unc_data.rds")
 
 summary(unc_df_persp)
